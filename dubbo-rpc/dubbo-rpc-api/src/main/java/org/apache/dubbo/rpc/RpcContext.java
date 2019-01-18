@@ -19,7 +19,9 @@ package org.apache.dubbo.rpc;
 import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.threadlocal.InternalThreadLocal;
+import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.NetUtils;
+import org.apache.dubbo.common.utils.StringUtils;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -50,12 +52,15 @@ public class RpcContext {
     /**
      * use internal thread local to improve performance
      */
+    // FIXME REQUEST_CONTEXT
     private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {
             return new RpcContext();
         }
     };
+
+    // FIXME RESPONSE_CONTEXT
     private static final InternalThreadLocal<RpcContext> SERVER_LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {
@@ -361,7 +366,7 @@ public class RpcContext {
      */
     public String getLocalHostName() {
         String host = localAddress == null ? null : localAddress.getHostName();
-        if (host == null || host.length() == 0) {
+        if (StringUtils.isEmpty(host)) {
             return getLocalHost();
         }
         return host;
@@ -601,7 +606,7 @@ public class RpcContext {
 
     public RpcContext setInvokers(List<Invoker<?>> invokers) {
         this.invokers = invokers;
-        if (invokers != null && !invokers.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(invokers)) {
             List<URL> urls = new ArrayList<URL>(invokers.size());
             for (Invoker<?> invoker : invokers) {
                 urls.add(invoker.getUrl());
@@ -662,7 +667,7 @@ public class RpcContext {
                     if (o instanceof CompletableFuture) {
                         return (CompletableFuture<T>) o;
                     }
-                    CompletableFuture.completedFuture(o);
+                    return CompletableFuture.completedFuture(o);
                 } else {
                     // The service has a normal sync method signature, should get future from RpcContext.
                 }
